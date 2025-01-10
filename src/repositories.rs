@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
-    sync::{Arc, RwLock},
+    sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
 };
 use thiserror::Error;
 
@@ -39,11 +39,11 @@ pub struct UpdateTodo {
 }
 
 impl Todo {
-    pub fn new(id: i32, text: String, completed: bool) -> Self {
+    pub fn new(id: i32, text: String) -> Self {
         Self {
             id,
             text,
-            completed,
+            completed: false,
         }
     }
 }
@@ -61,11 +61,23 @@ impl TodoRepositoryForMemory {
             store: Arc::default(),
         }
     }
+
+    fn write_store_ref(&self) -> RwLockWriteGuard<TodoDatas> {
+        self.store.write().unwrap()
+    }
+
+    fn read_store_ref(&self) -> RwLockReadGuard<TodoDatas> {
+        self.store.read().unwrap()
+    }
 }
 
 impl TodoRepository for TodoRepositoryForMemory {
     fn create(&self, payload: CreateTodo) -> Todo {
-        todo!();
+        let mut store = self.write_store_ref();
+        let id = (store.len() + 1) as i32;
+        let todo = Todo::new(id, payload.text.clone());
+        store.insert(id, todo.clone());
+        todo
     }
 
     fn find(&self, id: i32) -> Option<Todo> {
