@@ -111,3 +111,53 @@ impl TodoRepository for TodoRepositoryForMemory {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn todo_crud_scenario() {
+        let text = "todo text".to_string();
+        let id = 1;
+        let expected = Todo::new(id, text.clone());
+        let repository = TodoRepositoryForMemory::new();
+
+        // create
+        let todo = repository.create(CreateTodo { text });
+        assert_eq!(expected, todo);
+
+        // find
+        let todo = repository.find(todo.id).unwrap();
+        assert_eq!(expected, todo);
+
+        // all
+        let todo = repository.all();
+        assert_eq!(vec![expected], todo);
+
+        // update
+        let text = "updated todo text".to_string();
+        let todo = repository
+            .update(
+                1,
+                UpdateTodo {
+                    text: Some(text.clone()),
+                    completed: Some(true),
+                },
+            )
+            .expect("failed update todo.");
+
+        assert_eq!(
+            Todo {
+                id: 1,
+                text: text,
+                completed: true,
+            },
+            todo
+        );
+
+        // delete
+        let res = repository.delete(id);
+        assert!(res.is_ok());
+    }
+}
