@@ -81,7 +81,8 @@ impl TodoRepository for TodoRepositoryForMemory {
     }
 
     fn find(&self, id: i32) -> Option<Todo> {
-        todo!();
+        let store = self.read_store_ref();
+        store.get(&id).map(|todo| todo.clone())
     }
 
     fn all(&self) -> Vec<Todo> {
