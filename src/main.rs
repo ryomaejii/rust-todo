@@ -7,7 +7,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use handlers::create_todo;
+use handlers::{all_todo, all_todos, create_todo, delete_todo, find_todo, update_todo};
 use std::{env, net::SocketAddr, sync::Arc};
 
 #[tokio::main]
@@ -31,7 +31,13 @@ async fn main() {
 fn create_app<T: TodoRepository>(repository: T) -> Router {
     Router::new()
         .route("/", get(root))
-        .route("/todos", post(create_todo::<T>))
+        .route("/todos", post(create_todo::<T>).get(all_todo::<T>))
+        .route(
+            "/todos/:id",
+            get(find_todo::<T>)
+                .delete(delete_todo::<T>)
+                .patch(update_todo::<T>),
+        )
         .layer(Extension(Arc::new(repository)))
 }
 
