@@ -49,10 +49,9 @@ async fn root() -> &'static str {
 mod test {
     use super::*;
     use axum::{body::Body, http::Request, response::Response};
-    use hyper::{header, Method};
+    use hyper::{header, Method, StatusCode};
     use repositories::{CreateTodo, Todo};
     use tower::ServiceExt;
-    use tracing_subscriber::fmt::format;
 
     fn build_todo_req_with_json(path: &str, method: Method, json_body: String) -> Request<Body> {
         Request::builder()
@@ -139,5 +138,15 @@ mod test {
         let res = create_app(repository).oneshot(req).await.unwrap();
         let todo = res_to_todo(res).await;
         assert_eq!(expected, todo);
+    }
+
+    #[tokio::test]
+    async fn should_delete_todo() {
+        let repository = TodoRepositoryForMemory::new();
+        repository.create(CreateTodo::new("should_delete_todo".to_string()));
+        let req = build_todo_req_with_empty(Method::DELETE, "/todos/1");
+        let res = create_app(repository).oneshot(req).await.unwrap();
+
+        assert_eq!(StatusCode::NO_CONTENT, res.status());
     }
 }
