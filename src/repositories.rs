@@ -33,6 +33,15 @@ pub struct CreateTodo {
     text: String,
 }
 
+// テストの時にのみ、newを使ってCreateTodoを作成する
+// 正直、newする場合としないで作る場合の違いがわからん
+#[cfg(test)]
+impl CreateTodo {
+    pub fn new(text: String) -> Self {
+        Self { text }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub struct UpdateTodo {
     text: Option<String>,

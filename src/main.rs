@@ -48,17 +48,58 @@ async fn root() -> &'static str {
 #[cfg(test)]
 mod test {
     use super::*;
-    use axum::{body::Body, http::Request};
+    use axum::{body::Body, http::Request, response::Response};
+    use hyper::{header, Method};
+    use repositories::{CreateTodo, Todo};
     use tower::ServiceExt;
 
-    #[tokio::test]
-    async fn should_return_hello_world() {
-        let repository = TodoRepositoryForMemory::new();
-        let req = Request::builder().uri("/").body(Body::empty()).unwrap();
-        let res = create_app(repository).oneshot(req).await.unwrap();
+    fn build_todo_req_with_json(path: &str, method: Method, json_body: String) -> Request<Body> {
+        Request::builder()
+            .uri(path)
+            .method(method)
+            .header(header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+            .body(Body::from(json_body))
+            .unwrap()
+    }
 
+    fn build_todo_req_with_empty(method: Method, path: &str) -> Request<Body> {
+        Request::builder()
+            .uri(path)
+            .method(method)
+            .body(Body::empty())
+            .unwrap()
+    }
+
+    async fn res_to_todo(res: Response) -> Todo {
         let bytes = hyper::body::to_bytes(res.into_body()).await.unwrap();
-        let body = String::from_utf8(bytes.to_vec()).unwrap();
-        assert_eq!(body, "Hello, World!");
+        let body: String = String::from_utf8(bytes.to_vec()).unwrap();
+        let todo: Todo = serde_json::from_str(&body)
+            .expect(&format!("cannot convert Todo instance. body: {}", body));
+        todo
+    }
+
+    #[tokio::test]
+    async fn should_created_todo() {
+        let expected = Todo::new(1, "should_return_created_todo".to_string());
+        let repository = TodoRepositoryForMemory::new();
+        let req = build_todo_req_with_json(
+            "/todos",
+            Method::POST,
+            r#"{ "text": "should_return_created_todo" }"#.to_string(),
+        );
+        let res = create_app(repository).oneshot(req).await.unwrap();
+        let todo = res_to_todo(res).await;
+        assert_eq!(expected, todo);
+    }
+
+    #[tokio::test]
+    async fn should_find_todo() {
+        let expected = Todo::new(1, "should_find_todo".to_string());
+        let repository = TodoRepositoryForMemory::new();
+        repository.create(CreateTodo::new("should_find_todo".to_string()));
+        let req = build_todo_req_with_empty(Method::GET, "/todos/1");
+        let res = create_app(repository).oneshot(req).await.unwrap();
+        let todo = res_to_todo(res).await;
+        assert_eq!(expected, todo);
     }
 }
