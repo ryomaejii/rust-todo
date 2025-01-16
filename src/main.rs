@@ -7,7 +7,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use handlers::{all_todo, all_todos, create_todo, delete_todo, find_todo, update_todo};
+use handlers::{all_todo, create_todo, delete_todo, find_todo, update_todo};
 use std::{env, net::SocketAddr, sync::Arc};
 
 #[tokio::main]
